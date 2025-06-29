@@ -18,7 +18,7 @@ pipeline {
                 echo "🐳 Building and pushing Docker image..."
                 script {
                     def app = docker.build("${DOCKER_IMAGE}")
-                    docker.withRegistry('', 'dockerhub-credentials-id') {
+                    docker.withRegistry('', 'manoharmattepu') {
                         app.push()
                     }
                 }
