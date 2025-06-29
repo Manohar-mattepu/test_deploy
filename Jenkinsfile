@@ -1,50 +1,51 @@
-pipeline {
-    agent any
+    pipeline {
+        agent any
 	
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'master', url: 'https://github.com/Manohar-mattepu/test_deploy.git'
-            }
-        }
-
-        stage('Build with Maven') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Docker Build & Push') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'manoharmattepu', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        docker build -t $IMAGE_NAME .
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push $IMAGE_NAME
-                    '''
+        stages {
+            stage('Checkout') {
+                steps {
+                    git branch: 'master', url: 'https://github.com/Manohar-mattepu/test_deploy.git'
                 }
             }
-        }
 
-        stage('Deploy to Kubernetes') {
-            steps {
+            stage('Build with Maven') {
+                steps {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+
+           stage('Docker Build & Push') {
+        steps {
+            withCredentials([usernamePassword(credentialsId: 'manoharmattepu', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
                 sh '''
-                    kubectl apply -f k8s/deployment.yaml
-                    kubectl apply -f k8s/service.yaml
+                    docker login -u $DOCKER_USER -p $DOCKER_PASS
+                    docker build -t $DOCKER_USER/java-k8s-app:latest .
+                    docker push $DOCKER_USER/java-k8s-app:latest
                 '''
             }
         }
     }
 
-    post {
-        success {
-            echo '✅ Pipeline completed successfully.'
+
+            stage('Deploy to Kubernetes') {
+                steps {
+                    sh '''
+                        kubectl apply -f k8s/deployment.yaml
+                        kubectl apply -f k8s/service.yaml
+                    '''
+                }
+            }
         }
-        failure {
-            echo '❌ Pipeline failed. Check the build logs for details.'
-        }
-        always {
-            echo '📦 Build finished.'
+
+        post {
+            success {
+                echo '✅ Pipeline completed successfully.'
+            }
+            failure {
+                echo '❌ Pipeline failed. Check the build logs for details.'
+            }
+            always {
+                echo '📦 Build finished.'
+            }
         }
     }
-}
