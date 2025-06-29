@@ -8,11 +8,14 @@ pipeline {
         }
         stage('Docker Build & Push') {
             steps {
-                script {
-                    docker.build("manoharmattepu/java-k8s-app").push()
+                withCredentials([usernamePassword(credentialsId: 'manoharmattepu', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        docker build -t $IMAGE_NAME .
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $IMAGE_NAME
+                    '''
                 }
             }
-        }
         stage('Deploy to Kubernetes') {
             steps {
                 sh 'kubectl apply -f k8s/deployment.yaml'
