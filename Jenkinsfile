@@ -9,7 +9,7 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    docker.build("yourdockerhub/java-k8s-app").push()
+                    docker.build("manoharmattepu/java-k8s-app").push()
                 }
             }
         }
